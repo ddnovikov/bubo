@@ -1,0 +1,20 @@
+[package]
+name = "bubo"
+version = "0.1.0"
+authors = ["Daniil Novikov"]
+edition = "2018"
+
+[dependencies]
+futures-util = { version = "0.3.21", features = ["default"] }
+hex = { version = "0.4.3", features = ["default"] }
+hmac-sha256 = { version = "1.1.4", features = ["default"] }
+itertools = { version = "0.10.3", features = ["default"] }
+rand = { version = "0.8.5", features = ["alloc"]}
+reqwest = { version = "0.11.11", features = ["json"] }
+rust_decimal = { version = "1.26", features = ["serde-float"] }
+rust_decimal_macros = "1.26"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0.83", features = ["alloc"] }
+time = { version = "0.3.12", features = ["formatting"] }
+tokio = { version = "1.20.1", features = ["rt-multi-thread", "macros", "tracing"] }
+tokio-tungstenite = { version = "0.17.2", features = ["native-tls"]}
