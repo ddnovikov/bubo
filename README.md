@@ -38,4 +38,5 @@ My experience with this bot (this is a third attempt by the way) leads me to the
 
 1. Look for comments starting with "DD:" (design decision) to check out the details of the implementation.
 2. Executing orders simultaneously is more effective than doing them sequentially, because the price updates received in between the executed orders are usually showing that the opportunity is already gone. You can do this yourself if you are interested enough :)
-3. Take my experience with a healthy bit of skepticism and think for yourself. Maybe you'll be more smart or lucky than me if you give it a try. Good luck!
+3. I've put quite an effort to this bot and the main functionality works fine and fast enough. I got tired of not having financial results with it so I was too lazy to polish the final result. So, please don't fall into the nerd rage if you see some imperfections :)
+4. Take my experience with a healthy bit of skepticism and think for yourself. Maybe you'll be more smart or lucky than me if you give it a try. Good luck!
