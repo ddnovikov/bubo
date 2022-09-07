@@ -28,7 +28,7 @@ const DAY_VOLUME_THRESHOLD: f64 = 3500.0; // Execute chains only with trading pa
 const CHAINS_APPROX_FRACTION: f32 = 1.0; // Coefficient to work only with a part of all built chains.
 
 // DD: Most of the chains start on just a few currencies line USDT, USDC, BTC.
-// Doesn't make sense to look for other ones as they don't have enough volume 
+// Doesn't make sense to look for other ones as they don't have enough volume
 // for you to execute the chains anyway.
 
 const STARTING_CURRENCIES: [&str; 3] = ["USDT", "USDC", "BTC"];
@@ -123,7 +123,7 @@ impl Instruments {
     pub fn filter_day_vol(&mut self, tickers_data: Vec<TickerData>, day_volume_threshold: f64) {
         // DD: Filtering day volumes in some way is necessary due to pairs
         // with low volumes always contributing to some beefy gains but
-        // not being actually executable (i.e. you can't immediately execute 
+        // not being actually executable (i.e. you can't immediately execute
         // deals on those pairs at the strict price points you've set)
         let mut instruments_filtered: Vec<Instrument> = Vec::new();
         for instrument in self.instruments.iter() {
@@ -270,7 +270,7 @@ pub struct Order {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct OrderCancellation {
-    pub instrument_name: String
+    pub instrument_name: String,
 }
 
 // Structs to deserialize WebSocket responses
@@ -295,10 +295,7 @@ pub enum ResponseWebSocket {
         result: Option<OrderCreationResult>,
     },
     #[serde(rename = "private/cancel-all-orders")]
-    CancelAllOrders {
-        id: i64,
-        code: i64
-    },
+    CancelAllOrders { id: i64, code: i64 },
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -581,9 +578,9 @@ impl MarketWebSocket {
                             price_bid_best = data[0].price_lastest_trade;
                         }
                         let market_update = MarketUpdate {
-                             instrument_name: instrument_name,
-                             price_ask_best: price_ask_best,
-                             price_bid_best: price_bid_best,
+                            instrument_name: instrument_name,
+                            price_ask_best: price_ask_best,
+                            price_bid_best: price_bid_best,
                         };
                         instrument_channel.send(market_update);
                     }
@@ -631,14 +628,14 @@ impl MarketWebSocket {
 //   3.1. The most convenient way to manage the opportunities discovery
 //        and execution I came up with is to write a simple state machine.
 //        There are a lot of scenarios that happen during the trading, but
-//        they can be easily grouped into a few states. This approach 
+//        they can be easily grouped into a few states. This approach
 //        greatly simplifies the control flow and is easy to manage as we can
 //        clearly see and define all the rules of how the executor changes its
 //        state.
 //   3.2. The state is known at the start and at the end of each iteration of
 //        the infinite loop.
 //   3.3. Semaphore with capacity of 1 is used to make sure we only execute
-//        one chain at a time - basically this is a simple replacement for 
+//        one chain at a time - basically this is a simple replacement for
 //        asset allocation mechanism, which works because asset allocation is
 //        about scaling the work of the bot, but you obviously don't need any
 //        scaling it when the profits are less than or equal to zero.
@@ -647,8 +644,8 @@ pub enum ArbExecutorState<'a> {
     Pending(u64),
     Collecting,
     CalculationReady,
-    ExecutionReady(u8, SemaphorePermit<'a>, bool), // step, permit, cancellation flag
-    ExecutionStop(SemaphorePermit<'a>, bool), // permit, "suspend execution" flag
+    ExecutionReady(u8, SemaphorePermit<'a>, bool),        // step, permit, cancellation flag
+    ExecutionStop(SemaphorePermit<'a>, bool),             // permit, "suspend execution" flag
     ExecutionPending(u8, SemaphorePermit<'a>, bool, u64), // step, permit, cancellation flag, millisecond timestamp
 }
 
@@ -758,14 +755,14 @@ async fn main() {
                         } else {
                             ArbExecutorState::Pending(timestamp)
                         }
-                    },
+                    }
                     ArbExecutorState::Collecting => {
                         if arbitrage_chain.orders.iter().all(|o| o.price.is_some()) {
                             ArbExecutorState::CalculationReady
                         } else {
                             ArbExecutorState::Collecting
                         }
-                    },
+                    }
                     ArbExecutorState::CalculationReady => {
                         let mut gain = dec!(1.0);
                         let mut outcome = current_balance;
@@ -801,7 +798,7 @@ async fn main() {
                         } else {
                             ArbExecutorState::CalculationReady
                         }
-                    },
+                    }
                     ArbExecutorState::ExecutionReady(step, permit, false) => {
                         let id = rand::random::<u16>() as i64;
                         let nonce = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64;
@@ -813,7 +810,7 @@ async fn main() {
                         println!("ordering: {:#?}", request_create_order);
                         user_mpsc_request_sender.send(request_create_order).await.unwrap();
                         ArbExecutorState::ExecutionPending(step, permit, false, nonce)
-                    },
+                    }
                     ArbExecutorState::ExecutionReady(step, permit, true) => {
                         let id = rand::random::<u16>() as i64;
                         let nonce = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64;
@@ -821,12 +818,14 @@ async fn main() {
                         let request_cancellation_order = RequestWebSocket::CancelAllOrders {
                             id: id,
                             nonce: nonce,
-                            params: OrderCancellation { instrument_name: market_order.instrument_name },
+                            params: OrderCancellation {
+                                instrument_name: market_order.instrument_name,
+                            },
                         };
                         println!("cancelling: {:#?}", request_cancellation_order);
                         user_mpsc_request_sender.send(request_cancellation_order).await.unwrap();
                         ArbExecutorState::ExecutionPending(step, permit, true, nonce)
-                    },
+                    }
                     ArbExecutorState::ExecutionStop(permit, needs_wait) => {
                         drop(permit);
                         let res: Option<ArbExecutorState>;
@@ -841,7 +840,7 @@ async fn main() {
                         } else {
                             panic!("arb executor: no state generated as a result of ExecutionStop processing");
                         }
-                    },
+                    }
                     ArbExecutorState::ExecutionPending(step, permit, is_cancellation, nonce) => {
                         let res: Option<ArbExecutorState>;
                         if let Ok(user_channel_msg) = user_broadcast_response_receiver.try_recv() {
@@ -854,16 +853,19 @@ async fn main() {
                                         println!("arb executor: received order confirmation");
                                         res = Some(ArbExecutorState::ExecutionPending(step, permit, is_cancellation, nonce));
                                     }
-                                },
+                                }
                                 ResponseWebSocket::CancelAllOrders { id: _, code } => {
                                     if code != 0 {
-                                        println!("arb executor: received non-zero code on order confirmation, breaking order execution: {}", code);
+                                        println!(
+                                            "arb executor: received non-zero code on order confirmation, breaking order execution: {}",
+                                            code
+                                        );
                                         res = Some(ArbExecutorState::ExecutionStop(permit, true));
                                     } else {
                                         println!("arb executor: received order confirmation");
                                         res = Some(ArbExecutorState::ExecutionPending(step, permit, is_cancellation, nonce));
                                     }
-                                },
+                                }
                                 ResponseWebSocket::Subscribe {
                                     id: _,
                                     code: _,
