@@ -512,6 +512,8 @@ impl MarketWebSocket {
             broadcast::channel(MARKET_BROADCAST_RESPONSE_CAPACITY);
         let broadcast_response_sender_clone = broadcast_response_sender.clone();
         let stream_task_handle = tokio::spawn(async move {
+            // DD: ws_reader is almost always ready, so to get a healthy work distribution
+            // between tasks I had to put yields all over the place.
             while let Some(message) = ws_reader.next().await {
                 let data = message.unwrap().into_text().unwrap();
                 let response_ws: Option<ResponseWebSocket> = from_str(&data).ok();
@@ -568,6 +570,8 @@ impl MarketWebSocket {
                         result: Some(ResponseResult::Ticker { instrument_name, data, .. }),
                     } => {
                         let instrument_channel = &instrument_channels_clone_dispatch[&instrument_name];
+                        // DD: Price of the latest trade should be taken into account if it's not
+                        // between best bid and ask prices. This way you should get more orders filled.
                         let mut price_ask_best = data[0].price_ask_best;
                         let mut price_bid_best = data[0].price_bid_best;
                         if data[0].price_lastest_trade > data[0].price_ask_best {
@@ -643,9 +647,9 @@ pub enum ArbExecutorState<'a> {
     Pending(u64),
     Collecting,
     CalculationReady,
-    ExecutionReady(u8, SemaphorePermit<'a>, bool),
-    ExecutionStop(SemaphorePermit<'a>, bool),
-    ExecutionPending(u8, SemaphorePermit<'a>, bool, u64),
+    ExecutionReady(u8, SemaphorePermit<'a>, bool), // step, permit, cancellation flag
+    ExecutionStop(SemaphorePermit<'a>, bool), // permit, "suspend execution" flag
+    ExecutionPending(u8, SemaphorePermit<'a>, bool, u64), // step, permit, cancellation flag, millisecond timestamp
 }
 
 #[tokio::main]
